@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gong Lufang | Generative AI and Humanities</title>
+<style>
+:root{
+  --sky-1: #fdf2f8; --sky-2: #fbcfe8; --sky-3: #e9d5ff; --sky-4: #c4b5fd;
+  --clouds: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='200' viewBox='0 0 340 200'%3E%3Cg fill='%23ffffff' opacity='0.35'%3E%3Cellipse cx='95' cy='118' rx='72' ry='34'/%3E%3Cellipse cx='150' cy='100' rx='52' ry='40'/%3E%3Cellipse cx='205' cy='120' rx='58' ry='30'/%3E%3C/g%3E%3Cg fill='%23ffffff' opacity='0.2'%3E%3Cellipse cx='40' cy='30' rx='40' ry='16'/%3E%3Cellipse cx='285' cy='45' rx='34' ry='14'/%3E%3C/g%3E%3C/svg%3E");
+  --cloud-size: 340px; --photo: none; 
+  --ink: #3b1f4a; --ink-2: #5c3d6b; --ink-3: #8b6b9a;
+  --card: rgba(255,255,255,.65); --card-2: rgba(255,255,255,.88); --line: rgba(255,255,255,.9);
+  --shadow: 0 12px 34px rgba(80,50,120,.08); --shadow-lg:0 20px 50px rgba(80,50,120,.12);
+  --accent: #9333ea; --accent-soft: rgba(147,51,234,.10); --accent-warm: #ec4899;
+  --radius: 24px;
+}
+*,*::before,*::after{ box-sizing:border-box; }
+html{ background:#fdf2f8; scroll-behavior:smooth; }
+body{
+  margin:0; color:var(--ink-2); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height:1.8; font-size:16px; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+.sky{
+  position:fixed; inset:0; z-index:-2;
+  background-image: var(--photo), linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 40%, var(--sky-3) 75%, var(--sky-4) 100%);
+  background-size: cover; background-position: center;
+}
+.sky::after{
+  content:""; position:absolute; top:-8%; right:-20%; bottom:-8%; left:-20%;
+  background-image: var(--clouds); background-repeat: repeat; background-size: var(--cloud-size) auto;
+  animation: drift 120s linear infinite; will-change: transform;
+}
+@keyframes drift{ from{ transform: translate3d(0,0,0); } to  { transform: translate3d(calc(var(--cloud-size) * -1),0,0); } }
+@media (prefers-reduced-motion: reduce){ .sky::after{ animation: none; } }
+.wrap{ width:100%; max-width:1060px; margin:0 auto; padding:0 24px; }
+.hero{ padding: 50px 0 20px; }
+.hero-inner{ display:flex; align-items: center; justify-content: space-between; gap: 40px; }
+.hero-text{ flex: 1; max-width: 750px; }
+.hero h1{ margin:0 0 8px; font-size:clamp(30px,4vw,40px); line-height:1.2; letter-spacing:-.02em; font-weight:800; color:var(--ink); display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.hero h1 .light{ font-size:16px; font-weight:500; color:var(--ink-3); letter-spacing:0; }
+.hero .lede{ font-size:15.5px; color:var(--ink-2); margin: 0 0 20px 0; line-height: 1.7; }
+.email-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 999px; font-size: 15px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; white-space: nowrap; background: var(--accent); color: #fff; border: 1px solid transparent; box-shadow: 0 6px 20px rgba(147, 51, 234, 0.3); }
+.email-btn:hover { background: #7e22ce; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(147, 51, 234, 0.45); color: #fff; }
+.hero-avatar{ flex: none; width: 140px; height: 140px; border-radius: 50%; border: 4px solid rgba(255,255,255,0.95); box-shadow: 0 10px 25px rgba(80,50,120,.15); overflow: hidden; position: relative; background: linear-gradient(135deg, #fbcfe8, #e9d5ff); cursor: pointer; transition: transform 0.3s ease; display: flex; align-items: center; justify-content: center; }
+.hero-avatar:hover { transform: scale(1.03); }
+.hero-avatar::after { content: "Click to upload"; position: absolute; font-size: 11px; font-weight: 600; color: #fff; background: rgba(80,50,120,0.5); width: 100%; text-align: center; bottom: 0; padding: 4px 0; backdrop-filter: blur(2px); transition: opacity 0.3s; }
+.hero-avatar.has-photo::after { opacity: 0; }
+.hero-avatar:hover::after { opacity: 1; }
+.hero-avatar img{ width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: none; }
+.hero-avatar.has-photo img { display: block; }
+.hero-avatar svg { width: 40px; height: 40px; fill: rgba(255,255,255,0.6); }
+.hero-avatar.has-photo svg { display: none; }
+#avatar-upload { display: none; }
+.section{ padding:30px 0; }
+.section-head{ margin-bottom:24px; }
+.kicker{ margin:0 0 6px; font-size:11.5px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
+.section-head h2{ margin:0 0 8px; font-size:clamp(22px,3vw,28px); letter-spacing:-.02em; font-weight:750; color:var(--ink); }
+.section-head p{ margin:0; max-width:640px; font-size:14.5px; color:var(--ink-2); }
+.entry-grid{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); align-items: stretch; }
+.entry-card{ position:relative; display:flex; flex-direction:column; padding:24px; border-radius:var(--radius); background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); cursor:pointer; text-decoration:none; color:inherit; transition: transform .3s, box-shadow .3s, background .3s; }
+.entry-card:hover{ transform:translateY(-4px); background:var(--card-2); box-shadow:var(--shadow-lg); }
+.entry-card .icon{ font-size:26px; margin-bottom:12px; display:grid; place-items:center; width:44px; height:44px; border-radius:12px; background:linear-gradient(140deg, rgba(147,51,234,.12), rgba(236,72,153,.12)); }
+.entry-card h3{ margin:0 0 6px; font-size:18px; font-weight:700; color:var(--ink); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.entry-card p{ margin:0; font-size:13.5px; color:var(--ink-2); flex:1; }
+.entry-card .arrow{ margin-top:16px; font-size:13.5px; font-weight:600; color:var(--accent); display:flex; align-items:center; gap:4px; transition:gap .3s; }
+.entry-card:hover .arrow{ gap:8px; }
+.entry-card.featured { background: linear-gradient(135deg, #c084fc, #f472b6); border: none; box-shadow: 0 10px 25px rgba(192, 132, 252, 0.3); }
+.entry-card.featured:hover { background: linear-gradient(135deg, #b479f8, #f063a9); box-shadow: 0 14px 35px rgba(192, 132, 252, 0.4); }
+.entry-card.featured .icon { background: rgba(255,255,255,0.25); color: #fff; }
+.entry-card.featured h3 { color: #fff; font-size: 20px; font-weight: 800; }
+.entry-card.featured p { color: rgba(255,255,255,0.95); font-size: 14px; }
+.entry-card.featured .arrow { color: #fff; }
+.entry-card.featured .badge { font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.3); color: #fff; padding: 2px 8px; border-radius: 99px; }
+.modal-overlay{ position:fixed; inset:0; z-index:200; display:none; background:rgba(40,20,60,.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding:40px 20px; overflow-y:auto; }
+.modal-overlay.active{ display:flex; align-items:flex-start; justify-content:center; }
+.modal-content{ position:relative; width:100%; max-width:900px; margin:auto; background:rgba(255,255,255,.95); border-radius:24px; box-shadow:0 30px 80px rgba(40,20,60,.25); padding:36px; animation: modalIn .35s cubic-bezier(.2,.8,.2,1); }
+@keyframes modalIn{ from{ opacity:0; transform:translateY(30px) scale(.98); } to{ opacity:1; transform:translateY(0) scale(1); } }
+.modal-close{ position:absolute; top:16px; right:20px; width:36px; height:36px; border-radius:50%; background:rgba(0,0,0,.04); border:none; font-size:18px; color:var(--ink-3); cursor:pointer; display:grid; place-items:center; transition:background .2s, color .2s; }
+.modal-close:hover{ background:rgba(0,0,0,.08); color:var(--ink); }
+.modal-head{ margin-bottom:24px; }
+.modal-head h2{ margin:0 0 6px; font-size:24px; font-weight:750; color:var(--ink); }
+.modal-head p{ margin:0; font-size:14px; color:var(--ink-2); }
+.poem-tool { padding: 24px; border-radius: 16px; background: rgba(255,255,255,.7); border: 1px solid var(--line); margin-bottom: 16px; }
+.poem-controls { display: flex; gap: 12px; margin-bottom: 20px; }
+.poem-input { flex: 1; padding: 12px 16px; border-radius: 12px; border: 2px solid rgba(147,51,234,0.2); font-size: 16px; outline: none; transition: border-color 0.2s; }
+.poem-input:focus { border-color: var(--accent); }
+.poem-btn { padding: 12px 24px; border-radius: 12px; background: var(--accent); color: #fff; border: none; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.poem-btn:hover { background: #7e22ce; }
+.poem-display { min-height: 160px; padding: 24px; background: #fff; border-radius: 12px; border: 1px dashed rgba(147,51,234,0.3); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 22px; font-weight: 700; color: var(--ink); font-family: "STKaiti", "KaiTi", serif; white-space: pre-wrap; line-height: 1.8; margin-bottom: 20px; }
+.rating-section { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 14px; color: var(--ink-3); opacity: 0.5; pointer-events: none; transition: opacity 0.3s; }
+.rating-section.active { opacity: 1; pointer-events: auto; }
+.stars { display: flex; gap: 4px; cursor: pointer; }
+.star { font-size: 24px; color: #ddd; transition: color 0.2s, transform 0.2s; }
+.star:hover, .star.active { color: #fbbf24; transform: scale(1.1); }
+.project-item{ padding:20px; border-radius:16px; background:rgba(255,255,255,.7); border:1px solid var(--line); margin-bottom:12px; }
+.project-item:last-child{ margin-bottom:0; }
+.project-item h4{ margin:0 0 4px; font-size:17px; font-weight:700; color:var(--ink); }
+.project-item .role{ margin:0 0 8px; font-size:12.5px; color:var(--accent); font-weight:500; }
+.project-item p{ margin:0 0 10px; font-size:13.5px; color:var(--ink-2); }
+.shelf-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; }
+.book{ display:flex; flex-direction:column; justify-content:flex-start; padding:20px; border-radius:12px; background:#fff; border:1px solid #eef2f6; border-left:4px solid var(--accent); box-shadow:0 4px 12px rgba(80,50,120,.04); transition:transform .25s; }
+.book:hover{ transform:translateY(-3px); box-shadow:0 8px 20px rgba(80,50,120,.08); }
+.book h4{ margin:0 0 6px; font-size:14px; font-weight:700; color:var(--ink); line-height:1.4; }
+.book .code{ font-size:11.5px; font-weight:600; color:var(--ink-3); font-family: monospace; }
+.fav-section{ margin-bottom:32px; }
+.fav-section:last-child{ margin-bottom:0; }
+.fav-section h3{ margin:0 0 16px; font-size:17px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:8px; padding-bottom:8px; border-bottom:2px dashed rgba(147,51,234,0.15); }
+.fav-grid{ display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); }
+.fav-item{ display: block; padding:18px; border-radius:12px; background:rgba(255,255,255,.7); border:1px solid var(--line); text-decoration: none; color: inherit; transition: background 0.2s, transform 0.2s; }
+.fav-item:hover { background: #fff; transform: translateY(-2px); }
+.fav-item h4{ margin:0 0 4px; font-size:14.5px; font-weight:700; color:var(--ink); }
+.fav-item p{ margin:0; font-size:13px; color:var(--ink-2); }
+.video-item { display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 12px; background: rgba(255,255,255,.7); border: 1px solid var(--line); text-decoration: none; color: inherit; transition: background 0.2s, transform 0.2s; }
+.video-item:hover { background: #fff; transform: translateY(-2px); }
+.video-icon { flex: none; width: 32px; height: 32px; border-radius: 8px; background: #ff0000; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.video-info h4 { margin: 0 0 2px; font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.4; }
+.video-info p { margin: 0; font-size: 12px; color: var(--ink-3); }
+.timeline{ margin:0; padding:0; list-style:none; max-width:800px; }
+.tl-item{ position:relative; padding:0 0 30px 30px; border-left:2px solid rgba(147,51,234,.2); }
+.tl-item:last-child{ padding-bottom:0; }
+.tl-item::before{ content:""; position:absolute; left:-6px; top:8px; width:10px; height:10px; border-radius:50%; background:#fff; border:2px solid var(--accent); box-shadow:0 0 0 4px rgba(147,51,234,.08); }
+.tl-head{ display:flex; flex-wrap:wrap; gap:2px 16px; align-items:baseline; justify-content:space-between; }
+.tl-head h3{ margin:0; font-size:16px; font-weight:700; color:var(--ink); }
+.tl-time{ font-size:12.5px; color:var(--ink-3); white-space:nowrap; font-variant-numeric:tabular-nums; }
+.tl-sub{ margin:2px 0 10px; font-size:13px; color:var(--accent); }
+ul.points{ margin:0; padding-left:16px; font-size:14px; color:var(--ink-2); }
+ul.points li{ margin-bottom:6px; }
+ul.points li::marker{ color:var(--accent); }
+ul.points li:last-child{ margin-bottom:0; }
+.grid{ display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
+.card{ padding:24px; border-radius:var(--radius); background:var(--card); border:1px solid var(--line); box-shadow:var(--shadow); transition: transform .26s; }
+.card:hover{ transform:translateY(-3px); background:var(--card-2); box-shadow:var(--shadow-lg); }
+.card h3{ margin:0 0 4px; font-size:16px; font-weight:700; line-height:1.5; color:var(--ink); }
+.card .role{ margin:0 0 10px; font-size:12.5px; font-weight:500; color:var(--accent); }
+.card p{ margin:0 0 10px; font-size:14px; color:var(--ink-2); }
+.card p:last-child{ margin-bottom:0; }
+.card ul{ margin:0 0 4px; padding-left:16px; font-size:13.5px; color:var(--ink-2); }
+.card ul li{ margin-bottom:6px; }
+.card ul li::marker{ color:var(--accent); }
+.tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
+.tags span{ font-size:11.5px; padding:3px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); white-space:nowrap; }
+footer{ padding:30px 0 50px; text-align:center; font-size:12.5px; color:var(--ink-3); }
+footer .wave{ display:block; width:40px; height:2px; margin:0 auto 12px; border-radius:999px; background:linear-gradient(90deg, var(--accent), var(--accent-warm)); }
+.edit-bar{ position:fixed; right:18px; bottom:18px; z-index:300; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.edit-bar button{ appearance:none; cursor:pointer; padding:10px 18px; border-radius:999px; font-family:inherit; font-size:14px; font-weight:600; color:var(--ink); background:rgba(255,255,255,.95); border:1px solid rgba(147,51,234,.3); box-shadow:0 6px 18px rgba(80,50,120,.15); backdrop-filter:blur(8px); transition:transform .2s; }
+#editToggle { animation: pulse 2s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4); } 70% { box-shadow: 0 0 0 12px rgba(147, 51, 234, 0); } 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0); } }
+.edit-bar button:hover{ transform:translateY(-2px); background:#fff; animation: none; }
+.edit-bar button.is-on{ background:var(--accent); color:#fff; border-color:transparent; animation: none; }
+#colorPicker { display: none; width: 40px; height: 40px; padding: 0; border: 2px solid #fff; border-radius: 50%; cursor: pointer; box-shadow: 0 6px 18px rgba(80,50,120,.15); background: transparent; transition: transform .2s; }
+#colorPicker:hover { transform: scale(1.1); }
+#colorPicker::-webkit-color-swatch-wrapper { padding: 0; }
+#colorPicker::-webkit-color-swatch { border: none; border-radius: 50%; }
+body.is-editing #colorPicker { display: block; }
+body.is-editing [contenteditable="true"]:hover, body.is-editing [contenteditable="true"]:focus { outline:2px dashed rgba(147,51,234,.6); outline-offset:4px; border-radius:6px; background: rgba(255,255,255,0.4); }
+body.is-editing .card, body.is-editing .entry-card { transform:none !important; transition:none !important; }
+body.is-editing a:not([data-modal]) { cursor:text; }
+body.is-editing a[data-modal] { cursor:pointer; }
+@media (max-width:780px){ .hero-inner{ flex-direction: row; align-items: flex-start; gap: 16px; } .hero-avatar{ width: 90px; height: 90px; border-width: 3px; } .hero h1 { font-size: 24px; } .hero h1 .light { font-size: 14px; } .hero .lede { font-size: 13.5px; } .entry-grid, .grid, .fav-grid, .shelf-grid{ grid-template-columns:1fr; } .modal-content{ padding:24px; } .poem-controls { flex-direction: column; } }
+@media (max-width:600px){ .edit-bar{ left:14px; right:14px; bottom:14px; justify-content:center; } .email-btn { width: 100%; } }
+</style>
+</head>
+<body id="top">
+<div class="sky" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <h1>Gong Lufang <span class="light">Starting anew as a student at the intersection of Generative AI and the Humanities.</span></h1>
+        <p class="lede">Over the past eight years, I have been accustomed to finding certainty within complex financial numbers and system architectures. Now, I have chosen to return to campus. In the cross-domain of Generative AI and the Humanities, I hope to step out of my original boundaries, stay curious, and explore the many possibilities where technology and humanities collide.</p>
+        <a href="mailto:26043992g@connect.polyu.hk" class="email-btn" title="Send me an email">✉️ Contact Me: 26043992g@connect.polyu.hk</a>
+      </div>
+      <div class="hero-avatar" id="avatar-box" title="Click to upload your photo">
+        <input type="file" id="avatar-upload" accept="image/*">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <img id="user-avatar-img" src="" alt="Gong Lufang's Avatar">
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="section" id="now">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">Now &amp; Next</p>
+        <h2>Current &amp; Future</h2>
+        <p>Click on the windows below to see what I am studying, what I am following, and what I am building.</p>
+      </div>
+      <div class="entry-grid">
+        <a class="entry-card featured" href="#" data-modal="modal-doing">
+          <div class="icon" aria-hidden="true">🌟</div>
+          <h3>Portfolio <span class="badge">Ongoing</span></h3>
+          <p>AI poetry generation, course projects, and experiments. Take a look at my recent work.</p>
+          <div class="arrow">View Portfolio →</div>
+        </a>
+        <a class="entry-card" href="#" data-modal="modal-courses">
+          <div class="icon" aria-hidden="true">📚</div>
+          <h3>Current Courses</h3>
+          <p>PolyU · MSc in Generative AI and Humanities · Course List</p>
+          <div class="arrow">Open Bookshelf →</div>
+        </a>
+        <a class="entry-card" href="#" data-modal="modal-following">
+          <div class="icon" aria-hidden="true">✨</div>
+          <h3>Following</h3>
+          <p>Favorite books, YouTube videos I often watch, and ongoing thoughts.</p>
+          <div class="arrow">See What I Follow →</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="past">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">Past</p>
+        <h2>Past Experience</h2>
+        <p>From Fund Accountant to Consultant, and then to an in-house Senior SAP BPC Consultant.</p>
+      </div>
+      <ul class="timeline">
+        <li class="tl-item">
+          <div class="tl-head"><h3>Senior SAP-BPC Consultant · TCL Digital Technology</h3><span class="tl-time">May 2024 – Mar 2025</span></div>
+          <p class="tl-sub">Shenzhen TCL Digital Technology Co., Ltd. · Process &amp; Digital Transformation Center</p>
+          <ul class="points">
+            <li>Led the end-to-end implementation of a large listed company's management consolidation project (based on SAP BW &amp; PAPM).</li>
+            <li>Designed and delivered high-performance consolidation solutions, achieving automated data collection and elimination, improving reporting efficiency by 40%.</li>
+          </ul>
+        </li>
+        <li class="tl-item">
+          <div class="tl-head"><h3>Manager · Data Digital Department</h3><span class="tl-time">Oct 2017 – Apr 2024</span></div>
+          <p class="tl-sub">PricewaterhouseCoopers (PwC)</p>
+          <ul class="points">
+            <li>Specialized in financial consolidated statement consulting and implementation; familiar with consolidation reporting products and solutions, primarily SAP BPC.</li>
+            <li>Successfully led multiple multi-million-yuan financial digital transformation projects for large enterprises.</li>
+            <li>Rated Impact Tier-1 (Top Performance), the highest performance level in the team.</li>
+          </ul>
+        </li>
+        <li class="tl-item">
+          <div class="tl-head"><h3>Fund Accountant · Private Equity Department</h3><span class="tl-time">Jul 2016 – Feb 2017</span></div>
+          <p class="tl-sub">Sanne Group Shanghai Limited</p>
+          <ul class="points">
+            <li>Responsible for daily accounting of PE/VC funds, ensuring accuracy and compliance.</li>
+            <li>Monitored cash flow and executed fund transfers, establishing rigorous risk control processes.</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" id="projects">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">Selected Projects</p>
+        <h2>Project Experience</h2>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <h3>TCL Industrial IFS_A&amp;R Project</h3>
+          <p class="role">Implementation &amp; O&amp;M of Consolidation &amp; Elimination System</p>
+          <p>To support TCL's global expansion and cost reduction, a management consolidation solution was needed to connect domestic and international operations down to the product model level. I was responsible for the implementation and O&amp;M of the consolidation and elimination system for the China Marketing Segment.</p>
+          <ul>
+            <li>Responsible for requirements research, business blueprint, solution formulation, and implementation management.</li>
+            <li>Designed SAP BW integration solutions; completed business testing and integration testing; assisted users with UAT.</li>
+          </ul>
+          <div class="tags"><span>Management Consolidation</span><span>SAP BW</span><span>System Integration</span></div>
+        </article>
+        <article class="card">
+          <h3>Shuion FinanceX Project BPC Implementation</h3>
+          <p class="role">Group Leader of Consolidated Statement</p>
+          <p>Shui On Land requires the project to support commercial splitting and issue consolidated statements from multiple perspectives of subsidiaries and joint ventures.</p>
+          <ul>
+            <li>Issued the design of multiple thematic plans, including commercial splitting.</li>
+            <li>Analyzed and optimized consolidated statements; completed system development through system configuration.</li>
+            <li>Organized business testing, integration testing, and UAT for the statutory merger.</li>
+          </ul>
+          <div class="tags"><span>Consolidation</span><span>Commercial Splitting</span><span>User Training</span></div>
+        </article>
+        <article class="card">
+          <h3>Huafa BPC Finance and Fund Management Project</h3>
+          <p class="role">Group Leader of Statutory Consolidated Statement</p>
+          <p>Zhuhai Huafa Group has a complex and frequently changing shareholding structure, requiring step-by-step mergers to realize automatic equity offset.</p>
+          <ul>
+            <li>Responsible for the overall architecture design, requirements research, and system implementation.</li>
+            <li>Completed the development of the merged system; organized business testing, integration testing, UAT, and system online delivery.</li>
+          </ul>
+          <div class="tags"><span>Step-by-Step Merger</span><span>Equity Offset</span><span>Architecture</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="education">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">Education &amp; Credentials</p>
+        <h2>Education &amp; Qualifications</h2>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <h3>The Hong Kong Polytechnic University</h3>
+          <p class="role">MSc in Generative AI and Humanistic Studies · Sep 2025 — Present</p>
+          <p>Currently studying. Focusing on the intersection of Generative AI and the humanities, building up course projects and a portfolio.</p>
+        </article>
+        <article class="card">
+          <h3>Wuhan Textile University · School of Accounting</h3>
+          <p class="role">Bachelor's Degree · Jun 2012 – Jun 2016</p>
+          <p>Major in Accounting. Participated in ACCA-oriented studies and various professional competitions.</p>
+        </article>
+        <article class="card">
+          <h3>Certificates &amp; Honors</h3>
+          <ul>
+            <li>Chartered Certified Accountant (ACCA) Member</li>
+            <li>IELTS 7.0 &nbsp;/&nbsp; CET-6: 612</li>
+            <li>1st Place, ACCA JHC East China Regional Semi-final</li>
+            <li>3rd Place, IDEA Bilingual Debate Championship</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span class="wave" aria-hidden="true"></span>
+    © 2026 Gong Lufang · Written slowly under the sky of PolyU
+  </div>
+</footer>
+
+<!-- Modal: Courses -->
+<div class="modal-overlay" id="modal-courses">
+  <div class="modal-content">
+    <button class="modal-close" data-close>&times;</button>
+    <div class="modal-head">
+      <p class="kicker">Courses</p>
+      <h2>Current Courses</h2>
+      <p>PolyU · MSc in Generative AI and Humanistic Studies</p>
+    </div>
+    <div class="shelf-grid">
+      <div class="book"><h4>NATURAL LANGUAGE PROCESSING</h4><span class="code">COMP5423_26271_B</span></div>
+      <div class="book"><h4>THE ETHICAL CONTEXT OF GENERATIVE AI</h4><span class="code">AIH5035_26271_A</span></div>
+      <div class="book"><h4>COMPUTER PROGRAMMING IN LANGUAGE AND COMMUNICATION</h4><span class="code">AIH5501_26271_A</span></div>
+      <div class="book"><h4>INTRODUCTION TO GENERATIVE AI AND ITS APPLICATIONS</h4><span class="code">AIH5571_26271_A</span></div>
+      <div class="book"><h4>MACHINE LEARNING AND DATA ANALYTICS</h4><span class="code">COMP5541_26271_A</span></div>
+      <div class="book"><h4>DIGITAL STUDIES OF CHINESE CULTURE</h4><span class="code">AIH5904_26271_A</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Following -->
+<div class="modal-overlay" id="modal-following">
+  <div class="modal-content">
+    <button class="modal-close" data-close>&times;</button>
+    <div class="modal-head">
+      <p class="kicker">Following</p>
+      <h2>What I'm Following</h2>
+      <p>Books I love, videos I watch, and topics I keep thinking about.</p>
+    </div>
+    <div class="fav-section">
+      <h3>📖 Favorite Books</h3>
+      <div class="fav-grid">
+        <a class="fav-item" href="https://weread.qq.com/web/search/books?keyword=当你像鸟飞往你的山" target="_blank" rel="noopener"><h4>Educated</h4><p>当你像鸟飞往你的山 · Tara Westover</p></a>
+        <a class="fav-item" href="https://weread.qq.com/web/search/books?keyword=一生里的某一刻" target="_blank" rel="noopener"><h4>一生里的某一刻</h4><p>张春</p></a>
+        <a class="fav-item" href="https://weread.qq.com/web/search/books?keyword=那不勒斯四部曲" target="_blank" rel="noopener"><h4>那不勒斯四部曲</h4><p>Elena Ferrante</p></a>
+        <a class="fav-item" href="https://weread.qq.com/web/search/books?keyword=弃长安" target="_blank" rel="noopener"><h4>弃长安</h4><p>张明扬</p></a>
+        <a class="fav-item" href="https://weread.qq.com/web/search/books?keyword=太后西奔" target="_blank" rel="noopener"><h4>太后西奔</h4><p>张明扬</p></a>
+        <a class="fav-item" href="https://weread.qq.com/web/search/books?keyword=六神磊磊读唐诗" target="_blank" rel="noopener"><h4>六神磊磊读唐诗</h4><p>王晓磊</p></a>
+      </div>
+    </div>
+    <div class="fav-section">
+      <h3>🎬 Favorite YouTube Channels</h3>
+      <div class="fav-grid">
+        <a class="video-item" href="https://www.youtube.com/results?search_query=3Blue1Brown+Neural+Networks" target="_blank" rel="noopener"><div class="video-icon">▶</div><div class="video-info"><h4>3Blue1Brown: Neural Networks</h4><p>Explaining math and AI with beautiful animations</p></div></a>
+        <a class="video-item" href="https://www.youtube.com/results?search_query=Two+Minute+Papers" target="_blank" rel="noopener"><div class="video-icon">▶</div><div class="video-info"><h4>Two Minute Papers: AI Frontier</h4><p>Quick updates on the latest AI papers and breakthroughs</p></div></a>
+        <a class="video-item" href="https://www.youtube.com/results?search_query=Lex+Fridman+Podcast" target="_blank" rel="noopener"><div class="video-icon">▶</div><div class="video-info"><h4>Lex Fridman Podcast</h4><p>Conversations with top AI researchers about tech and humanity</p></div></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Portfolio -->
+<div class="modal-overlay" id="modal-doing">
+  <div class="modal-content">
+    <button class="modal-close" data-close>&times;</button>
+    <div class="modal-head">
+      <p class="kicker">Portfolio</p>
+      <h2>Portfolio · Ongoing</h2>
+      <p>Course projects, AI experiments, and written thoughts during my studies.</p>
+    </div>
+
+    <div class="project-item">
+      <h4>AI Writing Tang Poetry</h4>
+      <p class="role">Generative AI × Traditional Culture</p>
+      <p>Exploring the capabilities of Large Language Models (LLMs) in classical poetry creation. Enter a starting character to generate a Tang poem, and feel free to rate it!</p>
+      
+      <div class="poem-tool">
+        <div class="poem-controls">
+          <input type="text" id="poem-input" class="poem-input" maxlength="1" placeholder="输入第一个字（如：春）">
+          <button id="poem-btn" class="poem-btn">生成唐诗</button>
+        </div>
+        
+        <div id="poem-display" class="poem-display">
+          输入第一个字，让 AI 为你作诗...
+        </div>
+
+        <div class="rating-section" id="rating-section">
+          <span>为这首诗打分：</span>
+          <div class="stars" id="stars">
+            <span class="star" data-val="1">★</span>
+            <span class="star" data-val="2">★</span>
+            <span class="star" data-val="3">★</span>
+            <span class="star" data-val="4">★</span>
+            <span class="star" data-val="5">★</span>
+          </div>
+          <span id="rating-text" style="font-size:13px; color:var(--accent); font-weight:600;"></span>
+        </div>
+      </div>
+      <div class="tags"><span>LLM</span><span>Poetry</span><span>Interactive</span></div>
+    </div>
+
+    <div class="project-item">
+      <h4>AI Experiment: Prompt Engineering &amp; Creative Writing</h4>
+      <p class="role">Personal Experiment · Ongoing</p>
+      <p>Systematically recording the impact of different prompting strategies on generated text styles. Compiling them into a reusable prompt notebook and attempting to use them to assist writing.</p>
+      <div class="tags"><span>Prompt Engineering</span><span>Creative Writing</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="edit-bar" contenteditable="false">
+  <input type="color" id="colorPicker" value="#9333ea" title="选中文字后修改颜色">
+  <button id="editToggle" type="button">✎ 开启编辑 / Edit</button>
+  <button id="saveBtn" type="button">⬇ 导出网页 / Save</button>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // 头像上传
+  var avatarBox = document.getElementById('avatar-box');
+  var fileInput = document.getElementById('avatar-upload');
+  var avatarImg = document.getElementById('user-avatar-img');
+  var savedAvatar = localStorage.getItem('glf_avatar');
+  if (savedAvatar) { avatarImg.src = savedAvatar; avatarBox.classList.add('has-photo'); }
+  avatarBox.addEventListener('click', function(e) { if (!document.body.classList.contains('is-editing')) fileInput.click(); });
+  fileInput.addEventListener('change', function(e) {
+    var file = e.target.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(event) {
+      avatarImg.src = event.target.result; avatarBox.classList.add('has-photo');
+      try { localStorage.setItem('glf_avatar', event.target.result); } catch (err) {}
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 模态框
+  var overlayMap = {};
+  ['modal-courses', 'modal-following', 'modal-doing'].forEach(function(id){ overlayMap[id] = document.getElementById(id); });
+  function openModal(id){ var el = overlayMap[id]; if(!el) return; el.classList.add('active'); document.body.style.overflow = 'hidden'; }
+  function closeModal(el){ el.classList.remove('active'); document.body.style.overflow = ''; }
+  document.querySelectorAll('[data-modal]').forEach(function(trigger){
+    trigger.addEventListener('click', function(e){ e.preventDefault(); openModal(this.getAttribute('data-modal')); });
+  });
+  document.querySelectorAll('.modal-close, .modal-overlay').forEach(function(el){
+    el.addEventListener('click', function(e){ if(e.target === el || el.classList.contains('modal-close')) closeModal(el.closest('.modal-overlay')); });
+  });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(closeModal); });
+
+  // ==========================================
+  // --- AI 写唐诗 API 对接（已填好你的专属链接） ---
+  // ==========================================
+  var poemInput = document.getElementById('poem-input');
+  var poemBtn = document.getElementById('poem-btn');
+  var poemDisplay = document.getElementById('poem-display');
+  var ratingSection = document.getElementById('rating-section');
+  var stars = document.querySelectorAll('.star');
+  var ratingText = document.getElementById('rating-text');
+  
+  const API_URL = 'https://tang-poem-api.onrender.com/generate'; 
+
+  poemBtn.addEventListener('click', async function() {
+    var char = poemInput.value.trim();
+    if (!char) {
+      alert('请先输入第一个字哦！');
+      return;
+    }
+    
+    poemBtn.textContent = 'AI 正在作诗...';
+    poemBtn.style.opacity = '0.7';
+    poemDisplay.innerHTML = '<span style="color:var(--ink-3); font-size:16px; font-weight:400; line-height:1.5;">正在唤醒 AI 模型...<br><span style="font-size:12px">(免费服务器首次唤醒可能需要 30-50 秒，请稍候)</span></span>';
+    ratingSection.classList.remove('active');
+    
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start_char: char })
+      });
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        poemDisplay.textContent = data.error;
+      } else {
+        poemDisplay.textContent = data.poem;
+        ratingSection.classList.add('active');
+        resetStars();
+      }
+    } catch (e) {
+      console.error('API 请求失败', e);
+      poemDisplay.innerHTML = '<span style="color:#ef4444; font-size:15px;">生成失败，请检查网络或稍后再试。</span>';
+    } finally {
+      poemBtn.textContent = '生成唐诗';
+      poemBtn.style.opacity = '1';
+    }
+  });
+
+  // 评分
+  stars.forEach(function(star) {
+    star.addEventListener('click', function() {
+      var val = parseInt(this.getAttribute('data-val'));
+      stars.forEach(function(s, i) { if (i < val) s.classList.add('active'); else s.classList.remove('active'); });
+      ratingText.textContent = '感谢打分！ (' + val + '/5)';
+    });
+    star.addEventListener('mouseenter', function() {
+      var val = parseInt(this.getAttribute('data-val'));
+      stars.forEach(function(s, i) { if (i < val) s.style.color = '#fbbf24'; else s.style.color = '#ddd'; });
+    });
+    star.addEventListener('mouseleave', function() {
+      stars.forEach(function(s) { s.style.color = s.classList.contains('active') ? '#fbbf24' : '#ddd'; });
+    });
+  });
+  function resetStars() { stars.forEach(function(s) { s.classList.remove('active'); s.style.color = '#ddd'; }); ratingText.textContent = ''; }
+
+  // 编辑功能
+  var editableTargets = Array.prototype.slice.call(document.querySelectorAll('header.hero, main, footer, .modal-content'));
+  var editBtn = document.getElementById('editToggle');
+  var saveBtn = document.getElementById('saveBtn');
+  var colorPicker = document.getElementById('colorPicker');
+  var editing = false;
+  function enterEdit(){
+    editing = true; editableTargets.forEach(function(el){ el.setAttribute('contenteditable','true'); });
+    document.body.classList.add('is-editing'); editBtn.classList.add('is-on'); editBtn.textContent = '✓ 完成修改';
+    alert('✅ 编辑模式已开启！\n\n1. 直接点击网页上的文字即可修改。\n2. 用鼠标选中文字，点击右下角【彩色圆圈】可以改颜色。\n3. 修改完后点“完成修改”，再点“导出网页”保存。');
+  }
+  function exitEdit(){
+    editing = false; editableTargets.forEach(function(el){ el.removeAttribute('contenteditable'); });
+    document.body.classList.remove('is-editing'); editBtn.classList.remove('is-on'); editBtn.textContent = '✎ 开启编辑 / Edit';
+  }
+  editBtn.addEventListener('click', function(){ editing ? exitEdit() : enterEdit(); });
+
+  var savedSelection = null;
+  colorPicker.addEventListener('mousedown', function(e) { e.preventDefault(); var sel = window.getSelection(); if (sel.rangeCount > 0) savedSelection = sel.getRangeAt(0); });
+  colorPicker.addEventListener('input', function(e) {
+    var color = e.target.value;
+    if (savedSelection) { var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(savedSelection); }
+    document.execCommand('foreColor', false, color); colorPicker.focus();
+  });
+  document.addEventListener('click', function(e){
+    if(editing) { var targetLink = e.target.closest('a'); if (targetLink && targetLink.hasAttribute('data-modal')) return; if (targetLink) e.preventDefault(); }
+  }, true);
+
+  saveBtn.addEventListener('click', function(){
+    if (editing) exitEdit();
+    editableTargets.forEach(function(el){ el.removeAttribute('contenteditable'); });
+    var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = 'index.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    alert('🎉 网页已导出！');
+  });
+
+})();
+</script>
+
+</body>
+</html>
